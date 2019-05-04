@@ -1,9 +1,10 @@
+from FileSharingThread import ServerThread
 import socket
 import threading
 import os
 
 
-class FileSharingServer:
+class Server:
     # Constructor receives host & port as tuple,
     # data port for data connection
     def __init__(self, (host, port), data_port):
@@ -21,7 +22,7 @@ class FileSharingServer:
             self.socket.bind(server_address)
             self.socket.listen(10)
             print('Server is listening on '), server_address
-        except Exception, e:
+        except Exception as e:
             print('Failed to create server on '), server_address, ' because ', str(e.message)
             quit()
 
@@ -33,7 +34,7 @@ class FileSharingServer:
                 print('Waiting for connection')
                 # TODO: Start thread class FileSharingThread
                 # pass in current accepted socket
-                thread = FileSharingThread(self.socket.accept(), self.data_port)
+                thread = ServerThread(self.socket.accept(), self.data_port)
                 thread.daemon = True
                 thread.start()
         except KeyboardInterrupt:
