@@ -6,9 +6,9 @@ import os
 class FileSharingServer:
     # Constructor receives host & port as tuple,
     # data port for data connection
-    def __init__(self, (host, port), data_port):
-        self.host = host
-        self.port = port
+    def __init__(self, conn, data_port):
+        self.host = conn[0]
+        self.port = conn[1]
         self.data_port = data_port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -21,7 +21,7 @@ class FileSharingServer:
             self.socket.bind(server_address)
             self.socket.listen(10)
             print('Server is listening on '), server_address
-        except Exception, e:
+        except Exception as e:
             print('Failed to create server on '), server_address, ' because ', str(e.message)
             quit()
 
