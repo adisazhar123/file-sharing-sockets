@@ -1,4 +1,4 @@
-from FileSharingServer import Server
+from server.FileSharingServer import Server
 
 if __name__ == '__main__':
     HOST = '127.0.0.1'
