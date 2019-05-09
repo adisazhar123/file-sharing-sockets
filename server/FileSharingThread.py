@@ -58,6 +58,7 @@ class ServerThread(threading.Thread):
         try:
             client_data_socket, client_data_address = self.start_data_socket()
             entries = os.listdir(self.working_dir)
+            entries = self.check_type(entries)
 
             entries = pickle.dumps(entries)
             client_data_socket.send(entries)
@@ -67,3 +68,15 @@ class ServerThread(threading.Thread):
             traceback.print_exc()
         finally:
             self.close_data_socket()
+
+    def check_type(self, files_dirs):
+        file_dirs = []
+
+        for fd in files_dirs:
+            if os.path.isdir(self.working_dir + '/' + str(fd)):
+                file_dirs.append({'name': fd, 'type': 'dir'})
+            elif os.path.isfile(self.working_dir + '/' + str(fd)):
+                file_dirs.append({'name': fd, 'type': 'file'})
+            else:
+                print 'unknown file'
+        return file_dirs
