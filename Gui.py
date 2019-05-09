@@ -55,9 +55,3 @@ class App(Thread):
         self.tree.delete("tes2")
         for fd in files_dirs:
             self.tree.insert("", 2, iid=fd['name'], text=fd['name'], values=("23-Jun-17 11:25", "TXT file", "1 KB"))
-
-
-if __name__ == '__main__':
-    master = tk.Tk()
-    app = App(master).start()
-    master.mainloop()
