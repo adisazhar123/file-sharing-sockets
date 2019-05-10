@@ -2,6 +2,7 @@ import Tkinter as tk
 import ttk
 from threading import *
 from client.FileSharingClient import Client
+import os
 from Tkinter import *
 import tkSimpleDialog
 
@@ -44,8 +45,11 @@ class App(Thread):
         self.tree.heading("two", text="Type",anchor=tk.W)
         self.tree.heading("three", text="Size",anchor=tk.W)
 
-        self.tree.bind('<<TreeviewSelect>>', self.hahaha)
-        self.tree.pack(side=tk.TOP,fill=tk.X)
+        # Level 1
+#         folder1 = self.tree.insert("", 1, iid="tes1", text="Folder 1", values=("23-Jun-17 11:05","File folder",""))
+#         self.tree.insert("", 2,  iid="tes2", text="text_file.txt", values=("23-Jun-17 11:25","TXT file","1 KB"))
+#         self.tree.bind('<<TreeviewSelect>>', self.hahaha)
+#         self.tree.pack(side=tk.TOP,fill=tk.X)
 
     def hahaha(self, e):
         curItem = self.tree.focus()
@@ -69,7 +73,8 @@ class App(Thread):
         self.fsc.start()
 
     def reconstruct_tree(self, files_dirs):
-        # delete current items before constructing
+        for i in self.tree.get_children():
+            self.tree.delete(i)
         for fd in files_dirs:
             fd_size = str(fd["size"]) + " Bytes"
             if fd["type"] == 'dir':
