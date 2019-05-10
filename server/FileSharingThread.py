@@ -21,8 +21,7 @@ class ServerThread(threading.Thread):
             self.data_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.data_socket.bind(self.data_address)
             self.data_socket.listen(10)
-            conn_message = pickle.dumps({"message": "Data Connection opened. Transfer starting."})
-            self.client_socket.send(conn_message)
+
             print('Data socket has started. Listening on ', self.data_address)
 
             return self.data_socket.accept()
@@ -45,8 +44,14 @@ class ServerThread(threading.Thread):
                 client_data = pickle.loads(client_data)
                 print client_data["cmd"]
 
+                conn_message = pickle.dumps({"message": "Connected to server."})
+                self.client_socket.send(conn_message)
+
                 if client_data["cmd"] == "LIST":
                     self.LIST()
+                elif client_data["cmd"] == "MKDIR":
+                    dir_name = client_data["params"]
+                    self.MKDIR(dir_name)
 
         except Exception as e:
             self.close_data_socket()
@@ -69,14 +74,31 @@ class ServerThread(threading.Thread):
         finally:
             self.close_data_socket()
 
+    # create directory in current working directory
+    def MKDIR(self, dir_name):
+        full_path = self.working_dir + '/' + dir_name
+        try:
+            # check whether to be created dir exists
+            if not os.path.exists(full_path):
+                print 'making directory'
+                os.makedirs(full_path)
+        except Exception as e:
+            print 'MKDIR ERROR ' + str(e)
+            traceback.print_exc()
+
+    # function used to check whether file or directory
     def check_type(self, files_dirs):
         file_dirs = []
 
         for fd in files_dirs:
-            if os.path.isdir(self.working_dir + '/' + str(fd)):
-                file_dirs.append({'name': fd, 'type': 'dir'})
-            elif os.path.isfile(self.working_dir + '/' + str(fd)):
-                file_dirs.append({'name': fd, 'type': 'file'})
+            full_path = self.working_dir + '/' + str(fd)
+            size = os.path.getsize(full_path)
+            print full_path, str(size)
+
+            if os.path.isdir(full_path):
+                file_dirs.append({'name': fd, 'type': 'dir', 'size': size})
+            elif os.path.isfile(full_path):
+                file_dirs.append({'name': fd, 'type': 'file', 'size': size})
             else:
                 print 'unknown file'
         return file_dirs
