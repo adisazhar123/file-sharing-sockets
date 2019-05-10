@@ -2,7 +2,7 @@ import Tkinter as tk
 import ttk
 from threading import *
 from client.FileSharingClient import Client
-
+import os
 
 # tree.insert(folder1, "end", text="photo1.png", values=("23-Jun-17 11:28","PNG file","2.6 KB"))
 # tree.insert(folder1, "end", text="photo2.png", values=("23-Jun-17 11:29","PNG file","3.2 KB"))
@@ -32,10 +32,10 @@ class App(Thread):
         self.tree.heading("three", text="Size",anchor=tk.W)
 
         # Level 1
-        folder1 = self.tree.insert("", 1, iid="tes1", text="Folder 1", values=("23-Jun-17 11:05","File folder",""))
-        self.tree.insert("", 2,  iid="tes2", text="text_file.txt", values=("23-Jun-17 11:25","TXT file","1 KB"))
-        self.tree.bind('<<TreeviewSelect>>', self.hahaha)
-        self.tree.pack(side=tk.TOP,fill=tk.X)
+#         folder1 = self.tree.insert("", 1, iid="tes1", text="Folder 1", values=("23-Jun-17 11:05","File folder",""))
+#         self.tree.insert("", 2,  iid="tes2", text="text_file.txt", values=("23-Jun-17 11:25","TXT file","1 KB"))
+#         self.tree.bind('<<TreeviewSelect>>', self.hahaha)
+#         self.tree.pack(side=tk.TOP,fill=tk.X)
 
     def hahaha(self, e):
         curItem = self.tree.focus()
@@ -51,7 +51,7 @@ class App(Thread):
         fsc.start()
 
     def reconstruct_tree(self, files_dirs):
-        self.tree.delete("tes1")
-        self.tree.delete("tes2")
+        for i in self.tree.get_children():
+            self.tree.delete(i)
         for fd in files_dirs:
             self.tree.insert("", 2, iid=fd['name'], text=fd['name'], values=("23-Jun-17 11:25", "TXT file", "1 KB"))

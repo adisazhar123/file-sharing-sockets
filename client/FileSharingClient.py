@@ -70,7 +70,7 @@ class Client():
 
     def start(self):
         self.start_socket()
-
+        
         while True:
             cmd = raw_input("Enter command: ")
             commands = {"cmd": cmd}
