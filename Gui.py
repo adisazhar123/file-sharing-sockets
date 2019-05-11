@@ -35,6 +35,10 @@ class App(Thread):
         self.download_location = ''
         # variable to hold the file/ dir to be downloaded
         self.to_download = ''
+        # remember to reset to false everytime download is done
+        # this variable is used as flag to know whether we download
+        # a folder or zip
+        self.to_download_zip = False
 
     def construct_top_menu(self):
         self.menubar = Menu(self.frame)
@@ -77,6 +81,8 @@ class App(Thread):
                 self.popup.tk_popup(event.x_root + 50, event.y_root, 0)
                 selected_item = self.tree.item(iid)
                 self.to_download = selected_item['text']
+                if selected_item['values'][1] == 'Directory':
+                    self.to_download_zip = True
                 print 'clicked on', self.tree.item(iid)
         finally:
             self.popup.grab_release()

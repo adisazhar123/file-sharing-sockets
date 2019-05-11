@@ -102,7 +102,13 @@ class Client():
             self.receive_conn_response()
 
             self.start_data_socket()
-            f = open(self.gui_client.download_location + '/' + self.gui_client.to_download, 'wb')
+
+            zip_extension = ''
+            # if download file is zip, add .zip as extension
+            if self.gui_client.to_download_zip:
+                zip_extension = '.zip'
+
+            f = open(self.gui_client.download_location + '/' + self.gui_client.to_download + zip_extension, 'wb')
             while True:
                 bytes = self.data_socket.recv(1024)
                 print('data=%s', (bytes))
@@ -113,3 +119,5 @@ class Client():
         except Exception as e:
             print 'Error ' + str(e)
             traceback.print_exc()
+        finally:
+            self.gui_client.to_download_zip = False
