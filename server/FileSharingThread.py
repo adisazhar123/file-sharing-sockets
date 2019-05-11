@@ -49,7 +49,7 @@ class ServerThread(threading.Thread):
 
                 conn_message = pickle.dumps({"message": "Connected to server."})
                 self.client_socket.send(conn_message)
-
+                # match the commands given by client
                 if client_data["cmd"] == "LIST":
                     self.LIST()
                 elif client_data["cmd"] == "MKDIR":
@@ -82,6 +82,7 @@ class ServerThread(threading.Thread):
             db = db_conn.cursor()
             db.execute('SELECT * FROM user where user_name=? AND password=?', credentials)
             auth = db.fetchone()
+            # found a matching credential
             if auth != None:
                 self.working_dir = self.working_dir + '/' + auth[3]
             auth = pickle.dumps(auth)
@@ -149,6 +150,7 @@ class ServerThread(threading.Thread):
         full_path = self.working_dir + '/' + dir_name
         try:
             # check whether to be created dir exists
+            # TODO: alert/ warning for duplicated name
             if not os.path.exists(full_path):
                 print 'making directory'
                 os.makedirs(full_path)
