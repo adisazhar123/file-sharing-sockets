@@ -65,3 +65,4 @@ venv.bak/
 .pydevproject
 .vscode/
 *.db
+core/*
