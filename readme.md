@@ -18,6 +18,7 @@ user: fahrizal | pwd: password123
 3. Run _pyton client.py_ 
 4. - Command port: 1337
    - Data port: 1338
+5. Click Account -> Login -> fill in credentials
 
 ### Info
 

@@ -2,9 +2,10 @@ import socket
 import threading
 import os
 import pickle
+import time
 import traceback
 import sqlite3
-
+import shutil
 
 
 class ServerThread(threading.Thread):
@@ -12,6 +13,7 @@ class ServerThread(threading.Thread):
         self.client_socket = client[0]
         self.client_address = client[1]
         self.working_dir = os.getcwd() + '/core'
+        self.server_root = os.getcwd()
         self.data_address = ('127.0.0.1', data_port)
         threading.Thread.__init__(self)
 
@@ -47,7 +49,7 @@ class ServerThread(threading.Thread):
 
                 conn_message = pickle.dumps({"message": "Connected to server."})
                 self.client_socket.send(conn_message)
-
+                # match the commands given by client
                 if client_data["cmd"] == "LIST":
                     self.LIST()
                 elif client_data["cmd"] == "MKDIR":
@@ -60,8 +62,9 @@ class ServerThread(threading.Thread):
                 elif client_data["cmd"] == "DOWNLOAD":
                     print 'in download .. while true'
                     # concat for full path
-                    file_dir_name = self.working_dir + '/' + client_data["params"]["file_dir_name"]
-                    self.DOWNLOAD(file_dir_name)
+                    full_file_dir_name = self.working_dir + '/' + client_data["params"]["file_dir_name"]
+                    file_dir_name = client_data["params"]["file_dir_name"]
+                    self.DOWNLOAD(full_file_dir_name, file_dir_name)
 
         except Exception as e:
             self.close_data_socket()
@@ -79,6 +82,7 @@ class ServerThread(threading.Thread):
             db = db_conn.cursor()
             db.execute('SELECT * FROM user where user_name=? AND password=?', credentials)
             auth = db.fetchone()
+            # found a matching credential
             if auth != None:
                 self.working_dir = self.working_dir + '/' + auth[3]
             auth = pickle.dumps(auth)
@@ -89,22 +93,37 @@ class ServerThread(threading.Thread):
         finally:
             self.close_data_socket()
 
-    def DOWNLOAD(self, file_dir_name):
-        print 'about to download', file_dir_name
+    def DOWNLOAD(self, full_file_dir_name, file_dir_name):
+        print 'about to download', full_file_dir_name
         # check if pointer file_dir_name exists
-        if not os.path.exists(file_dir_name):
+        if not os.path.exists(full_file_dir_name):
             print 'NOT EXIST'
         else:
             print 'in else download'
             try:
                 client_data_socket, client_data_address = self.start_data_socket()
-                if os.path.isfile(file_dir_name):
-                    f = open(file_dir_name, 'rb')
+                # given path is a file
+                if os.path.isfile(full_file_dir_name):
+                    f = open(full_file_dir_name, 'rb')
                     bytes = f.read(1024)
                     while(bytes):
                         client_data_socket.send(bytes)
                         bytes = f.read(1024)
                     f.close()
+                #     given path is a directory -> zip the directory
+                elif os.path.isdir(full_file_dir_name):
+                    # zip temporarily to a folder
+                    temp_zip_name = str(time.time())
+                    shutil.make_archive(self.server_root + '/tmp/' + temp_zip_name, 'zip', full_file_dir_name)
+                    # read the zipped file
+                    f = open(self.server_root + '/tmp/' + temp_zip_name + '.zip', 'rb')
+                    bytes = f.read(1024)
+                    while(bytes):
+                        client_data_socket.send(bytes)
+                        bytes = f.read(1024)
+                    f.close()
+                    # remove the temp zipped file
+                    os.remove(self.server_root + '/tmp/' + temp_zip_name + '.zip')
             except Exception as e:
                 print 'DOWNLOAD ERROR ' + str(e)
                 traceback.print_exc()
@@ -131,6 +150,7 @@ class ServerThread(threading.Thread):
         full_path = self.working_dir + '/' + dir_name
         try:
             # check whether to be created dir exists
+            # TODO: alert/ warning for duplicated name
             if not os.path.exists(full_path):
                 print 'making directory'
                 os.makedirs(full_path)

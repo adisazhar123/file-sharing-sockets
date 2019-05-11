@@ -12,6 +12,7 @@ class Client():
         self.socket = Socket.socket(Socket.AF_INET, Socket.SOCK_STREAM)
         self.gui_client = gui_client
 
+    # start socket connection
     def start_socket(self):
         print 'Starting connection to ' + str(self.host) + ':' + str(self.port)
         try:
@@ -24,6 +25,7 @@ class Client():
             self.socket.close()
             quit()
 
+    # start data socket connection, on a different port
     def start_data_socket(self):
         try:
             self.data_socket = Socket.socket(Socket.AF_INET, Socket.SOCK_STREAM)
@@ -46,18 +48,20 @@ class Client():
         conn_res = pickle.loads(conn_res)
         print conn_res["message"] + ' in message'
 
+    # list files and dirs in current working dir
     def LIST(self):
         try:
             # send command to server
             self.send_command("LIST")
             # receive conn response
             self.receive_conn_response()
-
+            # open data socket
             self.start_data_socket()
+            # receive file and dirs
             dir_list = self.data_socket.recv(1024)
             dir_list = pickle.loads(dir_list)
             print " " + str(dir_list)
-
+            # reconstruct GUI tree view
             self.gui_client.reconstruct_tree(dir_list)
 
         except Exception, e:
@@ -66,11 +70,14 @@ class Client():
         finally:
             self.data_socket.close()
 
+    # make directory
     def MKDIR(self, dir_name):
         self.send_command("MKDIR", dir_name)
         self.receive_conn_response()
         self.LIST()
 
+    # login with credentials
+    # TODO: add warning/ alert for wrong credentials
     def AUTHENTICATE(self, username, password):
         print username, password
         params = {'username': username, 'password': password}
@@ -95,6 +102,8 @@ class Client():
     def start(self):
         self.start_socket()
 
+    # Download folder or file
+    # folders will be zipped
     def DOWNLOAD(self, file_dir_name):
         params = {'file_dir_name': file_dir_name}
         try:
@@ -102,7 +111,13 @@ class Client():
             self.receive_conn_response()
 
             self.start_data_socket()
-            f = open(self.gui_client.download_location + '/' + self.gui_client.to_download, 'wb')
+
+            zip_extension = ''
+            # if download file is zip, add .zip as extension
+            if self.gui_client.to_download_zip:
+                zip_extension = '.zip'
+
+            f = open(self.gui_client.download_location + '/' + self.gui_client.to_download + zip_extension, 'wb')
             while True:
                 bytes = self.data_socket.recv(1024)
                 print('data=%s', (bytes))
@@ -113,3 +128,5 @@ class Client():
         except Exception as e:
             print 'Error ' + str(e)
             traceback.print_exc()
+        finally:
+            self.gui_client.to_download_zip = False

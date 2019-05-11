@@ -13,9 +13,9 @@ class Server:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
+    # start a socket server and listen for connections
     def start_socket(self):
         server_address = (self.host, self.port)
-
         try:
             print('Creating server socket ', server_address)
             self.socket.bind(server_address)
@@ -27,7 +27,6 @@ class Server:
 
     def start(self):
         self.start_socket()
-
         try:
             while True:
                 print('Waiting for connection')

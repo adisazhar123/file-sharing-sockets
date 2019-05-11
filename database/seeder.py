@@ -18,8 +18,16 @@ print 'seeded users'
 conn.commit()
 
 conn.close()
+core_dir = os.getcwd() + '/core'
+tmp_dir = os.getcwd() + '/tmp'
 
-core_dir = os.getcwd() + '/../core'
+if not os.path.exists(core_dir):
+        print 'making core dir'
+        os.makedirs(core_dir)
+if not os.path.exists(tmp_dir):
+        print 'making tmp dir'
+        os.makedirs(tmp_dir)
+
 # init user dirs
 for user in users:
         if not os.path.exists(core_dir + '/' + user[3]):
