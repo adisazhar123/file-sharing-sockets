@@ -1,4 +1,3 @@
-from client.FileSharingClient import Client
 from Gui import App
 import Tkinter as tk
 
@@ -9,4 +8,5 @@ DATA_PORT = 1338
 if __name__ == '__main__':
     master = tk.Tk()
     app = App(master).start()
+    master.wm_minsize(800, 600)
     master.mainloop()

@@ -3,6 +3,8 @@ import threading
 import os
 import pickle
 import traceback
+import sqlite3
+
 
 
 class ServerThread(threading.Thread):
@@ -11,7 +13,6 @@ class ServerThread(threading.Thread):
         self.client_address = client[1]
         self.working_dir = os.getcwd() + '/core'
         self.data_address = ('127.0.0.1', data_port)
-
         threading.Thread.__init__(self)
 
     def start_data_socket(self):
@@ -52,12 +53,63 @@ class ServerThread(threading.Thread):
                 elif client_data["cmd"] == "MKDIR":
                     dir_name = client_data["params"]
                     self.MKDIR(dir_name)
+                elif client_data["cmd"] == "AUTHENTICATE":
+                    username = client_data["params"]["username"]
+                    password = client_data["params"]["password"]
+                    self.AUTHENTICATE(username, password)
+                elif client_data["cmd"] == "DOWNLOAD":
+                    print 'in download .. while true'
+                    # concat for full path
+                    file_dir_name = self.working_dir + '/' + client_data["params"]["file_dir_name"]
+                    self.DOWNLOAD(file_dir_name)
 
         except Exception as e:
             self.close_data_socket()
             self.client_socket.close()
             print('Closed client socket ', self.client_socket)
+            traceback.print_exc()
             quit()
+
+    def AUTHENTICATE(self, username, password):
+        try:
+            client_data_socket, client_data_address = self.start_data_socket()
+            credentials = (username, password, )
+
+            db_conn = sqlite3.connect('file_sharing_sockets.db')
+            db = db_conn.cursor()
+            db.execute('SELECT * FROM user where user_name=? AND password=?', credentials)
+            auth = db.fetchone()
+            if auth != None:
+                self.working_dir = self.working_dir + '/' + auth[3]
+            auth = pickle.dumps(auth)
+            client_data_socket.send(auth)
+        except Exception as e:
+            print 'AUTH ERROR ' + str(e)
+            traceback.print_exc()
+        finally:
+            self.close_data_socket()
+
+    def DOWNLOAD(self, file_dir_name):
+        print 'about to download', file_dir_name
+        # check if pointer file_dir_name exists
+        if not os.path.exists(file_dir_name):
+            print 'NOT EXIST'
+        else:
+            print 'in else download'
+            try:
+                client_data_socket, client_data_address = self.start_data_socket()
+                if os.path.isfile(file_dir_name):
+                    f = open(file_dir_name, 'rb')
+                    bytes = f.read(1024)
+                    while(bytes):
+                        client_data_socket.send(bytes)
+                        bytes = f.read(1024)
+                    f.close()
+            except Exception as e:
+                print 'DOWNLOAD ERROR ' + str(e)
+                traceback.print_exc()
+            finally:
+                self.close_data_socket()
 
     def LIST(self):
         try:

@@ -5,19 +5,12 @@ import traceback
 
 class Client():
     def __init__(self, (host, port), data_port, gui_client):
-        """Constructor.
-        Arguments:
-            (host, port) -- tuple
-            data_port -- port for data connection
-        """
         self.host = host
         self.port = port
         self.data_port = data_port
         self.server_address = (host, port)
         self.socket = Socket.socket(Socket.AF_INET, Socket.SOCK_STREAM)
-
         self.gui_client = gui_client
-        self.gui_client.text = 'jdkfgdjfgnjdfg'
 
     def start_socket(self):
         print 'Starting connection to ' + str(self.host) + ':' + str(self.port)
@@ -32,8 +25,12 @@ class Client():
             quit()
 
     def start_data_socket(self):
-        self.data_socket = Socket.socket(Socket.AF_INET, Socket.SOCK_STREAM)
-        self.data_socket.connect((self.host, self.data_port))
+        try:
+            self.data_socket = Socket.socket(Socket.AF_INET, Socket.SOCK_STREAM)
+            self.data_socket.connect((self.host, self.data_port))
+        except Exception as e:
+            print 'Error ' + str(e)
+            traceback.print_exc()
 
     # this function is used to send command to server using COMMAND PORT
     # cmd is the command
@@ -69,28 +66,50 @@ class Client():
         finally:
             self.data_socket.close()
 
-
-
     def MKDIR(self, dir_name):
         self.send_command("MKDIR", dir_name)
         self.receive_conn_response()
         self.LIST()
 
+    def AUTHENTICATE(self, username, password):
+        print username, password
+        params = {'username': username, 'password': password}
+        try:
+            self.send_command("AUTHENTICATE", params)
+            self.receive_conn_response()
+
+            self.start_data_socket()
+            auth = self.data_socket.recv(1024)
+            auth = pickle.loads(auth)
+            if auth == None:
+                print 'NO credentials found'
+            else:
+                self.gui_client.authenticated()
+                print " " + str(auth)
+        except Exception as e:
+            print 'Error ' + str(e)
+            traceback.print_exc()
+        finally:
+            self.data_socket.close()
 
     def start(self):
         self.start_socket()
 
-        # while True:
-        #     # cmd = raw_input("Enter command: ")
-        #     # commands = {"cmd": cmd}
-        #     #
-        #     # # send command to server
-        #     # self.socket.send(pickle.dumps(commands))
-        #     print 'waiting for conn response'
-        #     # receive connection response
-        #     conn_res = self.socket.recv(1024)
-        #     conn_res = pickle.loads(conn_res)
-        #     print conn_res["message"]
-        #
-        #     # if cmd == "LIST":
-        #     #     self.LIST()
+    def DOWNLOAD(self, file_dir_name):
+        params = {'file_dir_name': file_dir_name}
+        try:
+            self.send_command('DOWNLOAD', params)
+            self.receive_conn_response()
+
+            self.start_data_socket()
+            f = open(self.gui_client.download_location + '/' + self.gui_client.to_download, 'wb')
+            while True:
+                bytes = self.data_socket.recv(1024)
+                print('data=%s', (bytes))
+                if not bytes:
+                    break
+                f.write(bytes)
+            f.close()
+        except Exception as e:
+            print 'Error ' + str(e)
+            traceback.print_exc()
