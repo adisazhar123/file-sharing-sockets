@@ -33,8 +33,10 @@ class App(Thread):
 
         # variable to hold download directory location
         self.download_location = ''
+        self.upload_location = ''
         # variable to hold the file/ dir to be downloaded
         self.to_download = ''
+        self.to_upload = ''
         # remember to reset to false everytime download is done
         # this variable is used as flag to know whether we download
         # a folder or zip
@@ -47,6 +49,7 @@ class App(Thread):
         self.filemenu.add_command(label="Create Directory", command=self.MKDIR)
         self.filemenu.add_command(label="Refresh", command=self.LIST)
         self.filemenu.add_command(label="Save")
+        self.filemenu.add_command(label="Upload", command=self.browse_upload)
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Exit")
 
@@ -102,7 +105,14 @@ class App(Thread):
             self.download_location = dir_name
             self.DOWNLOAD(self.to_download)
             print dir_name
-
+    
+    def browse_upload(self):
+        dir_name = tkFileDialog.askopenfilename()
+        if dir_name:
+            self.upload_location = dir_name
+            self.UPLOAD(dir_name)
+            print dir_name
+    
     def AUTHENTICATE(self):
         username = tkSimpleDialog.askstring("Username", "Enter username")
         password = tkSimpleDialog.askstring("Password", "Enter password")
@@ -124,7 +134,10 @@ class App(Thread):
     def DOWNLOAD(self, file_dir_name):
         print file_dir_name
         self.fsc.DOWNLOAD(file_dir_name)
-        
+    
+    def UPLOAD(self, file_dir_name):
+        print("Uploading file")
+        self.fsc.UPLOAD(file_dir_name)
 
     def run(self):
         self.fsc.start()

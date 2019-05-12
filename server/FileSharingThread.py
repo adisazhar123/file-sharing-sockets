@@ -24,6 +24,7 @@ class ServerThread(threading.Thread):
             self.data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.data_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.data_socket.bind(self.data_address)
+            self.data_socket.settimeout(10)
             self.data_socket.listen(10)
 
             print('Data socket has started. Listening on ', self.data_address)
@@ -69,6 +70,10 @@ class ServerThread(threading.Thread):
                 elif client_data["cmd"] == "CD":
                     print("in CD")
                     self.CD(client_data["params"])
+                elif client_data["cmd"] == "UPLOAD":
+                    print("in UPLOAD ")
+                    print(client_data["params"])
+                    self.UPLOAD(client_data["params"]["file_dir_name"])
 
         except Exception as e:
             self.close_data_socket()
@@ -96,6 +101,7 @@ class ServerThread(threading.Thread):
             traceback.print_exc()
         finally:
             self.close_data_socket()
+            print("auth closed")
 
     def DOWNLOAD(self, full_file_dir_name, file_dir_name):
         print 'about to download', full_file_dir_name
@@ -133,6 +139,31 @@ class ServerThread(threading.Thread):
                 traceback.print_exc()
             finally:
                 self.close_data_socket()
+    
+    def UPLOAD(self, fileName):
+        print(fileName)
+        if os.path.exists(self.working_dir + fileName):
+            print("The file already exists!")
+        else:
+            print("in else upload")
+            try:
+                client_data_socket, client_data_address = self.start_data_socket()
+                f = open(self.working_dir + '/' + fileName, "wb")
+                while True:
+                    ## RECV IS STILL HANGING IF A FILE > 1024 BYTES IS UPLOADED
+                    bytes = client_data_socket.recv(1024)
+                    print("data %s", (bytes))
+                    if not bytes:
+                        break
+                    f.write(bytes)
+                f.close()
+                print("UPLOAD completed.")
+            except Exception as e:
+                print 'UPLOAD ERROR ' + str(e)
+                traceback.print_exc()
+            finally:
+                self.data_socket.close()
+                print("upload socket closed")
     def CD(self, dirName):
         if dirName == "..":
             if self.working_dir == self.original_working_dir:

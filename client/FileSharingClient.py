@@ -29,6 +29,7 @@ class Client():
     def start_data_socket(self):
         try:
             self.data_socket = Socket.socket(Socket.AF_INET, Socket.SOCK_STREAM)
+            self.data_socket.settimeout(10)
             self.data_socket.connect((self.host, self.data_port))
         except Exception as e:
             print 'Error ' + str(e)
@@ -103,6 +104,7 @@ class Client():
             traceback.print_exc()
         finally:
             self.data_socket.close()
+            print("auth closed")
 
     def start(self):
         self.start_socket()
@@ -124,6 +126,7 @@ class Client():
 
             f = open(self.gui_client.download_location + '/' + self.gui_client.to_download + zip_extension, 'wb')
             while True:
+                ## RECV IS STILL HANGING IF A FILE > 1024 BYTES IS UPLOADED
                 bytes = self.data_socket.recv(1024)
                 print('data=%s', (bytes))
                 if not bytes:
@@ -135,3 +138,31 @@ class Client():
             traceback.print_exc()
         finally:
             self.gui_client.to_download_zip = False
+    
+    def UPLOAD(self, file_dir_name):
+        indx = file_dir_name.rfind('/')
+        fileName = file_dir_name[indx+1:]
+        params = {'file_dir_name': fileName}
+        try:
+            self.send_command('UPLOAD', params)
+            self.receive_conn_response()
+            
+            self.start_data_socket()
+            f = open(file_dir_name, 'rb')
+            bytes = f.read(1024)
+            while True:
+                self.data_socket.send(bytes)
+                bytes = f.read(1024)
+                print("data: %s", (bytes))
+                
+                if not bytes:
+                    break
+            f.close()
+            print("UPLOAD completed.")
+            self.LIST()
+        except Exception as e:
+            print 'Error ' + str(e)
+            traceback.print_exc()
+        finally:
+            self.data_socket.close()
+            print("upload socket closed")
