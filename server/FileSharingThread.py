@@ -14,6 +14,7 @@ class ServerThread(threading.Thread):
         self.client_address = client[1]
         self.working_dir = os.getcwd() + '/core'
         self.server_root = os.getcwd()
+        self.original_working_dir = os.getcwd() + '/core'
         self.data_address = ('127.0.0.1', data_port)
         threading.Thread.__init__(self)
 
@@ -65,6 +66,9 @@ class ServerThread(threading.Thread):
                     full_file_dir_name = self.working_dir + '/' + client_data["params"]["file_dir_name"]
                     file_dir_name = client_data["params"]["file_dir_name"]
                     self.DOWNLOAD(full_file_dir_name, file_dir_name)
+                elif client_data["cmd"] == "CD":
+                    print("in CD")
+                    self.CD(client_data["params"])
 
         except Exception as e:
             self.close_data_socket()
@@ -129,7 +133,18 @@ class ServerThread(threading.Thread):
                 traceback.print_exc()
             finally:
                 self.close_data_socket()
-
+    def CD(self, dirName):
+        if dirName == "..":
+            if self.working_dir == self.original_working_dir:
+                pass
+            else:
+                slashIndex = self.working_dir.rfind('/')
+                self.working_dir = self.working_dir[:slashIndex]
+        else:
+            self.working_dir = self.working_dir + '/' + dirName
+        
+        print("Current working directory: " + self.working_dir)
+    
     def LIST(self):
         try:
             client_data_socket, client_data_address = self.start_data_socket()

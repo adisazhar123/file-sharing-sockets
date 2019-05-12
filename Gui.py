@@ -72,7 +72,15 @@ class App(Thread):
         self.tree.pack(side=tk.TOP, fill=tk.X)
 
         self.tree.bind("<Button-3>", self.do_popup)
-
+        self.tree.bind('<Double-1>', self.OnDoubleClick)
+    
+    def OnDoubleClick(self, e):
+        curItem = self.tree.focus()
+        print "double clicked " + self.tree.item(curItem)['text']
+        if self.tree.item(curItem)['values'][1] == u"Directory":
+            folder_name = self.tree.item(curItem)['text']
+            self.fsc.CD(folder_name)
+    
     def do_popup(self, event):
         iid = self.tree.identify_row(event.y)
         try:
@@ -123,6 +131,9 @@ class App(Thread):
     def reconstruct_tree(self, files_dirs):
         for i in self.tree.get_children():
             self.tree.delete(i)
+            
+        self.tree.insert("", 1, iid="..", text="..", values=(" ", "Directory", " "))
+        
         for fd in files_dirs:
             fd_size = str(fd["size"]) + " Bytes"
             if fd["type"] == 'dir':
