@@ -124,6 +124,7 @@ class App(Thread):
     def DOWNLOAD(self, file_dir_name):
         print file_dir_name
         self.fsc.DOWNLOAD(file_dir_name)
+        
 
     def run(self):
         self.fsc.start()
