@@ -17,7 +17,6 @@ class App(Thread):
         Thread.__init__(self)
         self.master = master
         self.tree=ttk.Treeview(master)
-
         self.text = 'initial text'
 
         self.tree["columns"]=("one","two","three")
@@ -31,27 +30,44 @@ class App(Thread):
         self.tree.heading("two", text="Type",anchor=tk.W)
         self.tree.heading("three", text="Size",anchor=tk.W)
 
-        # Level 1
+        #Level 1
 #         folder1 = self.tree.insert("", 1, iid="tes1", text="Folder 1", values=("23-Jun-17 11:05","File folder",""))
 #         self.tree.insert("", 2,  iid="tes2", text="text_file.txt", values=("23-Jun-17 11:25","TXT file","1 KB"))
-#         self.tree.bind('<<TreeviewSelect>>', self.hahaha)
-#         self.tree.pack(side=tk.TOP,fill=tk.X)
+        self.tree.bind('<Double-1>', self.OnDoubleClick)
+        self.tree.pack(side=tk.TOP,fill=tk.X)
 
-    def hahaha(self, e):
+    def OnDoubleClick(self, e):
         curItem = self.tree.focus()
         print self.tree.item(curItem)
         print 'after'
         print self.text
+        if self.tree.item(curItem)['values'][1] == u"Directory":
+            commands = {"cmd": "CD", "dir":self.tree.item(curItem)['text']}
+            print(commands)
+            self.fsc.GUIHandle(commands)
 
     def run(self):
         print 'in thread'
         print 'before'
         print self.text
-        fsc = Client((HOST, PORT), DATA_PORT, self)
-        fsc.start()
+        self.fsc = Client((HOST, PORT), DATA_PORT, self)
+        self.fsc.start()
 
     def reconstruct_tree(self, files_dirs):
+        num = 2
         for i in self.tree.get_children():
             self.tree.delete(i)
+            
+        self.tree.insert("", 1, iid="..", text="..", values=(" ", "Directory", " "))
         for fd in files_dirs:
-            self.tree.insert("", 2, iid=fd['name'], text=fd['name'], values=("23-Jun-17 11:25", "TXT file", "1 KB"))
+            print(fd)
+            if fd['type'] == "file":
+                extIndex = fd['name'].rfind('.')
+                fileType = fd['name'][extIndex+1:]
+                fileType = fileType.upper()
+                self.tree.insert("", num, iid=fd['name'], text=fd['name'], values=("23-Jun-17 11:25", fileType, fd['size'] + " B"))
+            elif fd['type'] == "dir":
+                self.tree.insert("", num, iid=fd['name'], text=fd['name'], values=("23-Jun-17 11:25", "Directory", "1 KB"))
+            else:
+                self.tree.insert("", num, iid=fd['name'], text=fd['name'], values=("unknown", "UNKNOWN file", "1 KB"))
+            num += 1

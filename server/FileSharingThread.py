@@ -11,7 +11,7 @@ class ServerThread(threading.Thread):
         self.client_address = client[1]
         self.working_dir = os.getcwd() + '/core'
         self.data_address = ('127.0.0.1', data_port)
-
+        self.original_working_dir = os.getcwd() + '/core'
         threading.Thread.__init__(self)
 
     def start_data_socket(self):
@@ -43,10 +43,14 @@ class ServerThread(threading.Thread):
             while True:
                 client_data = self.client_socket.recv(1024)
                 client_data = pickle.loads(client_data)
+                print("Received command:")
                 print client_data["cmd"]
 
                 if client_data["cmd"] == "LIST":
                     self.LIST()
+                elif client_data["cmd"] == "CD":
+                    print("CD")
+                    self.CD(client_data["dir"])
 
         except Exception as e:
             self.close_data_socket()
@@ -69,6 +73,34 @@ class ServerThread(threading.Thread):
         finally:
             self.close_data_socket()
 
+    def CD(self, dirName):
+        if dirName == "..":
+            if self.working_dir == self.original_working_dir:
+                pass
+            else:
+                slashIndex = self.working_dir.rfind('/')
+                self.working_dir = self.working_dir[:slashIndex]
+        else:
+            self.working_dir = self.working_dir + '/' + dirName
+        
+        print("Current working directory: " + self.working_dir)
+            
+        try:
+            print("2.5")
+            client_data_socket, client_data_address = self.start_data_socket()
+            print("3")
+            entries = os.listdir(self.working_dir)
+            entries = self.check_type(entries)
+
+            entries = pickle.dumps(entries)
+            client_data_socket.send(entries)
+            print("4")
+        except Exception as e:
+            print 'CD ERROR ' + str(e)
+            traceback.print_exc()
+        finally:
+            self.close_data_socket()
+
     def check_type(self, files_dirs):
         file_dirs = []
 
@@ -76,7 +108,10 @@ class ServerThread(threading.Thread):
             if os.path.isdir(self.working_dir + '/' + str(fd)):
                 file_dirs.append({'name': fd, 'type': 'dir'})
             elif os.path.isfile(self.working_dir + '/' + str(fd)):
-                file_dirs.append({'name': fd, 'type': 'file'})
+                file_size = os.path.getsize(self.working_dir+ '/' + str(fd))
+                file_dirs.append({'name': fd, 'type': 'file', 'size':str(file_size)})
             else:
                 print 'unknown file'
         return file_dirs
+        
+        
