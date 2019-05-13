@@ -159,10 +159,10 @@ class Client():
                     break
             f.close()
             print("UPLOAD completed.")
-            self.LIST()
         except Exception as e:
             print 'Error ' + str(e)
             traceback.print_exc()
         finally:
             self.data_socket.close()
             print("upload socket closed")
+            self.LIST()
