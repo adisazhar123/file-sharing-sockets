@@ -166,3 +166,14 @@ class Client():
             self.data_socket.close()
             print("upload socket closed")
             self.LIST()
+
+    # TODO: check if deleted is folder/ file
+    def DELETE(self, to_delete):
+        params = {'file_dir_name': to_delete}
+        try:
+            self.send_command('DELETE', params)
+            self.receive_conn_response()
+
+        except Exception as e:
+            print 'Error ' + str(e)
+            traceback.print_exc()

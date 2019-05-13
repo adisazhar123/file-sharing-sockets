@@ -28,6 +28,7 @@ class App(Thread):
 
         self.popup = Menu(self.master, tearoff=0)
         self.popup.add_command(label="Download", command=self.browse_directory)
+        self.popup.add_command(label="Delete", command=self.DELETE)
         self.popup.add_command(label="Share")
         self.popup.add_separator()
 
@@ -41,6 +42,10 @@ class App(Thread):
         # this variable is used as flag to know whether we download
         # a folder or zip
         self.to_download_zip = False
+        self.to_delete = ''
+
+    def DELETE(self):
+        self.fsc.DELETE(self.to_delete)
 
     def construct_top_menu(self):
         self.menubar = Menu(self.frame)
@@ -92,6 +97,7 @@ class App(Thread):
                 self.popup.tk_popup(event.x_root + 50, event.y_root, 0)
                 selected_item = self.tree.item(iid)
                 self.to_download = selected_item['text']
+                self.to_delete = selected_item['text']
                 if selected_item['values'][1] == 'Directory':
                     self.to_download_zip = True
                 print 'clicked on', self.tree.item(iid)

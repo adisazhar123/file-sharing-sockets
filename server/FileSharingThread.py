@@ -74,6 +74,7 @@ class ServerThread(threading.Thread):
                     print("in UPLOAD ")
                     print(client_data["params"])
                     self.UPLOAD(client_data["params"]["file_dir_name"])
+                elif
 
         except Exception as e:
             self.close_data_socket()
@@ -220,3 +221,6 @@ class ServerThread(threading.Thread):
             else:
                 print 'unknown file'
         return file_dirs
+
+    def DELETE(self, file_dir):
+        full_path
