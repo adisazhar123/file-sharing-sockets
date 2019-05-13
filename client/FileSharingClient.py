@@ -173,7 +173,8 @@ class Client():
         try:
             self.send_command('DELETE', params)
             self.receive_conn_response()
-
         except Exception as e:
             print 'Error ' + str(e)
             traceback.print_exc()
+        finally:
+            self.LIST()

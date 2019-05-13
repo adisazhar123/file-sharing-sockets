@@ -74,7 +74,8 @@ class ServerThread(threading.Thread):
                     print("in UPLOAD ")
                     print(client_data["params"])
                     self.UPLOAD(client_data["params"]["file_dir_name"])
-                elif
+                elif client_data['cmd'] == "DELETE":
+                    self.DELETE(client_data['params']['file_dir_name'])
 
         except Exception as e:
             self.close_data_socket()
@@ -223,4 +224,10 @@ class ServerThread(threading.Thread):
         return file_dirs
 
     def DELETE(self, file_dir):
-        full_path
+        full_path = self.working_dir + '/' + file_dir
+        if not os.path.exists(full_path):
+            print 'Not exists!'
+        else:
+            if os.path.isdir(full_path):
+                shutil.rmtree(full_path)
+            # todo check file
