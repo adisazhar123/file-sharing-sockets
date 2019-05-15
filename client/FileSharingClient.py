@@ -105,6 +105,8 @@ class Client():
         finally:
             self.data_socket.close()
             print("auth closed")
+            self.LIST()
+            
 
     def start(self):
         self.start_socket()
@@ -178,3 +180,6 @@ class Client():
             traceback.print_exc()
         finally:
             self.LIST()
+
+    # def SHARE(self):
+        

@@ -29,7 +29,7 @@ class App(Thread):
         self.popup = Menu(self.master, tearoff=0)
         self.popup.add_command(label="Download", command=self.browse_directory)
         self.popup.add_command(label="Delete", command=self.DELETE)
-        self.popup.add_command(label="Share")
+        # self.popup.add_command(label="Share", command=self.SHARE)
         self.popup.add_separator()
 
         # variable to hold download directory location
@@ -160,3 +160,6 @@ class App(Thread):
                 self.tree.insert("", 2, iid=fd['name'], text=fd['name'], values=("23-Jun-17 11:25", "Directory", fd_size))
             else:
                 self.tree.insert("", 2, iid=fd['name'], text=fd['name'], values=("23-Jun-17 11:25", "File", fd_size))
+
+    # def SHARE(self):
+        

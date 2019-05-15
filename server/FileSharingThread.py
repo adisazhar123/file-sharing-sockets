@@ -96,6 +96,8 @@ class ServerThread(threading.Thread):
             # found a matching credential
             if auth != None:
                 self.working_dir = self.working_dir + '/' + auth[3]
+                self.original_working_dir = self.working_dir
+                print self.original_working_dir
             auth = pickle.dumps(auth)
             client_data_socket.send(auth)
         except Exception as e:
