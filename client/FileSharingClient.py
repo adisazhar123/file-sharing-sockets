@@ -70,7 +70,7 @@ class Client():
             traceback.print_exc()
         finally:
             self.data_socket.close()
-            
+    
     def CD(self, folder_name):
         self.send_command("CD", folder_name)
         self.receive_conn_response()
@@ -105,8 +105,7 @@ class Client():
         finally:
             self.data_socket.close()
             print("auth closed")
-            self.LIST()
-            
+            self.LIST()            
 
     def start(self):
         self.start_socket()

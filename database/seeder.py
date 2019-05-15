@@ -21,6 +21,8 @@ conn.close()
 core_dir = os.getcwd() + '/core'
 tmp_dir = os.getcwd() + '/tmp'
 
+os.listdir(core_dir)
+
 if not os.path.exists(core_dir):
         print 'making core dir'
         os.makedirs(core_dir)
