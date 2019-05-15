@@ -161,5 +161,12 @@ class App(Thread):
             else:
                 self.tree.insert("", 2, iid=fd['name'], text=fd['name'], values=("23-Jun-17 11:25", "File", fd_size))
 
-    # def SHARE(self):
+    def popupmsg(self, title, msg):
+        popup = tk.Tk()
+        popup.wm_title(title)
+        label = ttk.Label(popup, text=msg)
+        label.pack(side="top", fill="x", pady=10, padx=50)
+        B1 = ttk.Button(popup, text="OK", command = popup.destroy)
+        B1.pack()
+        popup.mainloop()
         

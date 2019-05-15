@@ -96,16 +96,17 @@ class Client():
             auth = pickle.loads(auth)
             if auth == None:
                 print 'NO credentials found'
+                self.gui_client.popupmsg("Failed Authentication", "Authentication failed.\nPlease try again.")
             else:
                 self.gui_client.authenticated()
                 print " " + str(auth)
+                self.LIST()
         except Exception as e:
             print 'Error ' + str(e)
             traceback.print_exc()
         finally:
             self.data_socket.close()
             print("auth closed")
-            self.LIST()            
 
     def start(self):
         self.start_socket()
