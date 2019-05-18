@@ -181,5 +181,7 @@ class Client():
         finally:
             self.LIST()
 
-    # def SHARE(self):
-        
+    def SHARE(self, share_to):
+        self.send_command("SHARE", share_to)
+        self.receive_conn_response()
+        self.LIST()

@@ -76,6 +76,9 @@ class ServerThread(threading.Thread):
                     self.UPLOAD(client_data["params"]["file_dir_name"])
                 elif client_data['cmd'] == "DELETE":
                     self.DELETE(client_data['params']['file_dir_name'])
+                elif client_data["cmd"] == "SHARE":
+                    share_to = client_data["params"]
+                    self.SHARE(share_to)
 
         except Exception as e:
             self.close_data_socket()
@@ -172,9 +175,27 @@ class ServerThread(threading.Thread):
         if dirName == "..":
             if self.working_dir == self.original_working_dir:
                 pass
+            # go to root after going back from "[Shared To] - ..." folder
+            elif self.working_dir.rfind('/[Shared To] - ') > 0:
+                self.working_dir = self.original_working_dir
             else:
                 slashIndex = self.working_dir.rfind('/')
                 self.working_dir = self.working_dir[:slashIndex]
+        # redirect to "[Shared To] - ..." when go to "[Shared From] - ..."
+        elif dirName[:16] == "[Shared From] - ":
+            self.working_dir = self.working_dir + '/' + dirName
+            
+            sharedToIndex = self.working_dir.rfind('/core') + 6
+            sharedTo = self.working_dir.rfind('/[Shared From] - ')
+            sharedToPerson = self.working_dir[sharedToIndex:sharedTo]
+            print 'shared to ' + sharedToPerson
+            sharedFrom = self.working_dir.rfind('/[Shared From] - ') + 17
+            sharedFromPerson = self.working_dir[sharedFrom:]
+            print 'shared from ' + sharedFromPerson
+
+            coreIndex = self.working_dir.rfind('/core')
+            self.working_dir = self.working_dir[:coreIndex] + '/core/' + sharedFromPerson + '/[Shared To] - ' + sharedToPerson
+            
         else:
             self.working_dir = self.working_dir + '/' + dirName
         
@@ -233,3 +254,22 @@ class ServerThread(threading.Thread):
             if os.path.isdir(full_path):
                 shutil.rmtree(full_path)
             # todo check file
+
+    def SHARE(self, share_to):
+        
+        coreIndex = self.original_working_dir.rfind('/core') + 5
+        share_from = self.original_working_dir[(coreIndex+1):]
+        
+        print share_from
+        share_to_path = self.original_working_dir[:coreIndex] + '/' + share_to
+
+        if not os.path.exists(share_to_path):
+            print 'User not found'
+        else:
+            print 'User found'
+            self.working_dir = share_to_path
+            self.MKDIR('[Shared From] - ' + share_from)
+            self.working_dir = self.original_working_dir
+            self.MKDIR('[Shared To] - ' + share_to)
+
+            

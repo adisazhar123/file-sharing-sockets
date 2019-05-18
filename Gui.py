@@ -29,8 +29,7 @@ class App(Thread):
         self.popup = Menu(self.master, tearoff=0)
         self.popup.add_command(label="Download", command=self.browse_directory)
         self.popup.add_command(label="Delete", command=self.DELETE)
-        # self.popup.add_command(label="Share", command=self.SHARE)
-        self.popup.add_separator()
+        self.popup.add_command(label="Share", command=self.SHARE)
 
         # variable to hold download directory location
         self.download_location = ''
@@ -170,3 +169,7 @@ class App(Thread):
         B1.pack()
         popup.mainloop()
         
+    def SHARE(self):
+        share_to = tkSimpleDialog.askstring("Username", "Enter username to share the file with")
+        if share_to:
+            self.fsc.SHARE(share_to)
