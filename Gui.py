@@ -28,17 +28,23 @@ class App(Thread):
 
         self.popup = Menu(self.master, tearoff=0)
         self.popup.add_command(label="Download", command=self.browse_directory)
-        self.popup.add_command(label="Share")
-        self.popup.add_separator()
+        self.popup.add_command(label="Delete", command=self.DELETE)
+        self.popup.add_command(label="Share", command=self.SHARE)
 
         # variable to hold download directory location
         self.download_location = ''
+        self.upload_location = ''
         # variable to hold the file/ dir to be downloaded
         self.to_download = ''
+        self.to_upload = ''
         # remember to reset to false everytime download is done
         # this variable is used as flag to know whether we download
         # a folder or zip
         self.to_download_zip = False
+        self.to_delete = ''
+
+    def DELETE(self):
+        self.fsc.DELETE(self.to_delete)
 
     def construct_top_menu(self):
         self.menubar = Menu(self.frame)
@@ -47,6 +53,7 @@ class App(Thread):
         self.filemenu.add_command(label="Create Directory", command=self.MKDIR)
         self.filemenu.add_command(label="Refresh", command=self.LIST)
         self.filemenu.add_command(label="Save")
+        self.filemenu.add_command(label="Upload", command=self.browse_upload)
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Exit")
 
@@ -72,7 +79,15 @@ class App(Thread):
         self.tree.pack(side=tk.TOP, fill=tk.X)
 
         self.tree.bind("<Button-3>", self.do_popup)
-
+        self.tree.bind('<Double-1>', self.OnDoubleClick)
+    
+    def OnDoubleClick(self, e):
+        curItem = self.tree.focus()
+        print "double clicked " + self.tree.item(curItem)['text']
+        if self.tree.item(curItem)['values'][1] == u"Directory":
+            folder_name = self.tree.item(curItem)['text']
+            self.fsc.CD(folder_name)
+    
     def do_popup(self, event):
         iid = self.tree.identify_row(event.y)
         try:
@@ -81,6 +96,7 @@ class App(Thread):
                 self.popup.tk_popup(event.x_root + 50, event.y_root, 0)
                 selected_item = self.tree.item(iid)
                 self.to_download = selected_item['text']
+                self.to_delete = selected_item['text']
                 if selected_item['values'][1] == 'Directory':
                     self.to_download_zip = True
                 print 'clicked on', self.tree.item(iid)
@@ -94,7 +110,14 @@ class App(Thread):
             self.download_location = dir_name
             self.DOWNLOAD(self.to_download)
             print dir_name
-
+    
+    def browse_upload(self):
+        dir_name = tkFileDialog.askopenfilename()
+        if dir_name:
+            self.upload_location = dir_name
+            self.UPLOAD(dir_name)
+            print dir_name
+    
     def AUTHENTICATE(self):
         username = tkSimpleDialog.askstring("Username", "Enter username")
         password = tkSimpleDialog.askstring("Password", "Enter password")
@@ -116,6 +139,10 @@ class App(Thread):
     def DOWNLOAD(self, file_dir_name):
         print file_dir_name
         self.fsc.DOWNLOAD(file_dir_name)
+    
+    def UPLOAD(self, file_dir_name):
+        print("Uploading file")
+        self.fsc.UPLOAD(file_dir_name)
 
     def run(self):
         self.fsc.start()
@@ -123,9 +150,26 @@ class App(Thread):
     def reconstruct_tree(self, files_dirs):
         for i in self.tree.get_children():
             self.tree.delete(i)
+            
+        self.tree.insert("", 1, iid="..", text="..", values=(" ", "Directory", " "))
+        
         for fd in files_dirs:
             fd_size = str(fd["size"]) + " Bytes"
             if fd["type"] == 'dir':
                 self.tree.insert("", 2, iid=fd['name'], text=fd['name'], values=("23-Jun-17 11:25", "Directory", fd_size))
             else:
                 self.tree.insert("", 2, iid=fd['name'], text=fd['name'], values=("23-Jun-17 11:25", "File", fd_size))
+
+    def popupmsg(self, title, msg):
+        popup = tk.Tk()
+        popup.wm_title(title)
+        label = ttk.Label(popup, text=msg)
+        label.pack(side="top", fill="x", pady=10, padx=50)
+        B1 = ttk.Button(popup, text="OK", command = popup.destroy)
+        B1.pack()
+        popup.mainloop()
+        
+    def SHARE(self):
+        share_to = tkSimpleDialog.askstring("Username", "Enter username to share the file with")
+        if share_to:
+            self.fsc.SHARE(share_to)

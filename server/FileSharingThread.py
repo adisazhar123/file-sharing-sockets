@@ -14,6 +14,7 @@ class ServerThread(threading.Thread):
         self.client_address = client[1]
         self.working_dir = os.getcwd() + '/core'
         self.server_root = os.getcwd()
+        self.original_working_dir = os.getcwd() + '/core'
         self.data_address = ('127.0.0.1', data_port)
         threading.Thread.__init__(self)
 
@@ -23,6 +24,7 @@ class ServerThread(threading.Thread):
             self.data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.data_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.data_socket.bind(self.data_address)
+            self.data_socket.settimeout(10)
             self.data_socket.listen(10)
 
             print('Data socket has started. Listening on ', self.data_address)
@@ -65,6 +67,18 @@ class ServerThread(threading.Thread):
                     full_file_dir_name = self.working_dir + '/' + client_data["params"]["file_dir_name"]
                     file_dir_name = client_data["params"]["file_dir_name"]
                     self.DOWNLOAD(full_file_dir_name, file_dir_name)
+                elif client_data["cmd"] == "CD":
+                    print("in CD")
+                    self.CD(client_data["params"])
+                elif client_data["cmd"] == "UPLOAD":
+                    print("in UPLOAD ")
+                    print(client_data["params"])
+                    self.UPLOAD(client_data["params"]["file_dir_name"])
+                elif client_data['cmd'] == "DELETE":
+                    self.DELETE(client_data['params']['file_dir_name'])
+                elif client_data["cmd"] == "SHARE":
+                    share_to = client_data["params"]
+                    self.SHARE(share_to)
 
         except Exception as e:
             self.close_data_socket()
@@ -85,6 +99,8 @@ class ServerThread(threading.Thread):
             # found a matching credential
             if auth != None:
                 self.working_dir = self.working_dir + '/' + auth[3]
+                self.original_working_dir = self.working_dir
+                print self.original_working_dir
             auth = pickle.dumps(auth)
             client_data_socket.send(auth)
         except Exception as e:
@@ -92,6 +108,7 @@ class ServerThread(threading.Thread):
             traceback.print_exc()
         finally:
             self.close_data_socket()
+            print("auth closed")
 
     def DOWNLOAD(self, full_file_dir_name, file_dir_name):
         print 'about to download', full_file_dir_name
@@ -129,7 +146,61 @@ class ServerThread(threading.Thread):
                 traceback.print_exc()
             finally:
                 self.close_data_socket()
+    
+    def UPLOAD(self, fileName):
+        print(fileName)
+        if os.path.exists(self.working_dir + fileName):
+            print("The file already exists!")
+        else:
+            print("in else upload")
+            try:
+                client_data_socket, client_data_address = self.start_data_socket()
+                f = open(self.working_dir + '/' + fileName, "wb")
+                while True:
+                    ## RECV IS STILL HANGING IF A FILE > 1024 BYTES IS UPLOADED
+                    bytes = client_data_socket.recv(1024)
+                    print("data %s", (bytes))
+                    if not bytes:
+                        break
+                    f.write(bytes)
+                f.close()
+                print("UPLOAD completed.")
+            except Exception as e:
+                print 'UPLOAD ERROR ' + str(e)
+                traceback.print_exc()
+            finally:
+                self.data_socket.close()
+                print("upload socket closed")
+    def CD(self, dirName):
+        if dirName == "..":
+            if self.working_dir == self.original_working_dir:
+                pass
+            # go to root after going back from "[Shared To] - ..." folder
+            elif self.working_dir.rfind('/[Shared To] - ') > 0:
+                self.working_dir = self.original_working_dir
+            else:
+                slashIndex = self.working_dir.rfind('/')
+                self.working_dir = self.working_dir[:slashIndex]
+        # redirect to "[Shared To] - ..." when go to "[Shared From] - ..."
+        elif dirName[:16] == "[Shared From] - ":
+            self.working_dir = self.working_dir + '/' + dirName
+            
+            sharedToIndex = self.working_dir.rfind('/core') + 6
+            sharedTo = self.working_dir.rfind('/[Shared From] - ')
+            sharedToPerson = self.working_dir[sharedToIndex:sharedTo]
+            print 'shared to ' + sharedToPerson
+            sharedFrom = self.working_dir.rfind('/[Shared From] - ') + 17
+            sharedFromPerson = self.working_dir[sharedFrom:]
+            print 'shared from ' + sharedFromPerson
 
+            coreIndex = self.working_dir.rfind('/core')
+            self.working_dir = self.working_dir[:coreIndex] + '/core/' + sharedFromPerson + '/[Shared To] - ' + sharedToPerson
+            
+        else:
+            self.working_dir = self.working_dir + '/' + dirName
+        
+        print("Current working directory: " + self.working_dir)
+    
     def LIST(self):
         try:
             client_data_socket, client_data_address = self.start_data_socket()
@@ -174,3 +245,31 @@ class ServerThread(threading.Thread):
             else:
                 print 'unknown file'
         return file_dirs
+
+    def DELETE(self, file_dir):
+        full_path = self.working_dir + '/' + file_dir
+        if not os.path.exists(full_path):
+            print 'Not exists!'
+        else:
+            if os.path.isdir(full_path):
+                shutil.rmtree(full_path)
+            # todo check file
+
+    def SHARE(self, share_to):
+        
+        coreIndex = self.original_working_dir.rfind('/core') + 5
+        share_from = self.original_working_dir[(coreIndex+1):]
+        
+        print share_from
+        share_to_path = self.original_working_dir[:coreIndex] + '/' + share_to
+
+        if not os.path.exists(share_to_path):
+            print 'User not found'
+        else:
+            print 'User found'
+            self.working_dir = share_to_path
+            self.MKDIR('[Shared From] - ' + share_from)
+            self.working_dir = self.original_working_dir
+            self.MKDIR('[Shared To] - ' + share_to)
+
+            

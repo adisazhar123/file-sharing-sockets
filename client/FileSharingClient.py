@@ -29,6 +29,7 @@ class Client():
     def start_data_socket(self):
         try:
             self.data_socket = Socket.socket(Socket.AF_INET, Socket.SOCK_STREAM)
+            self.data_socket.settimeout(10)
             self.data_socket.connect((self.host, self.data_port))
         except Exception as e:
             print 'Error ' + str(e)
@@ -69,7 +70,12 @@ class Client():
             traceback.print_exc()
         finally:
             self.data_socket.close()
-
+    
+    def CD(self, folder_name):
+        self.send_command("CD", folder_name)
+        self.receive_conn_response()
+        self.LIST()
+    
     # make directory
     def MKDIR(self, dir_name):
         self.send_command("MKDIR", dir_name)
@@ -90,14 +96,17 @@ class Client():
             auth = pickle.loads(auth)
             if auth == None:
                 print 'NO credentials found'
+                self.gui_client.popupmsg("Failed Authentication", "Authentication failed.\nPlease try again.")
             else:
                 self.gui_client.authenticated()
                 print " " + str(auth)
+                self.LIST()
         except Exception as e:
             print 'Error ' + str(e)
             traceback.print_exc()
         finally:
             self.data_socket.close()
+            print("auth closed")
 
     def start(self):
         self.start_socket()
@@ -119,6 +128,7 @@ class Client():
 
             f = open(self.gui_client.download_location + '/' + self.gui_client.to_download + zip_extension, 'wb')
             while True:
+                ## RECV IS STILL HANGING IF A FILE > 1024 BYTES IS UPLOADED
                 bytes = self.data_socket.recv(1024)
                 print('data=%s', (bytes))
                 if not bytes:
@@ -130,3 +140,48 @@ class Client():
             traceback.print_exc()
         finally:
             self.gui_client.to_download_zip = False
+    
+    def UPLOAD(self, file_dir_name):
+        indx = file_dir_name.rfind('/')
+        fileName = file_dir_name[indx+1:]
+        params = {'file_dir_name': fileName}
+        try:
+            self.send_command('UPLOAD', params)
+            self.receive_conn_response()
+            
+            self.start_data_socket()
+            f = open(file_dir_name, 'rb')
+            bytes = f.read(1024)
+            while True:
+                self.data_socket.send(bytes)
+                bytes = f.read(1024)
+                print("data: %s", (bytes))
+                
+                if not bytes:
+                    break
+            f.close()
+            print("UPLOAD completed.")
+        except Exception as e:
+            print 'Error ' + str(e)
+            traceback.print_exc()
+        finally:
+            self.data_socket.close()
+            print("upload socket closed")
+            self.LIST()
+
+    # TODO: check if deleted is folder/ file
+    def DELETE(self, to_delete):
+        params = {'file_dir_name': to_delete}
+        try:
+            self.send_command('DELETE', params)
+            self.receive_conn_response()
+        except Exception as e:
+            print 'Error ' + str(e)
+            traceback.print_exc()
+        finally:
+            self.LIST()
+
+    def SHARE(self, share_to):
+        self.send_command("SHARE", share_to)
+        self.receive_conn_response()
+        self.LIST()
