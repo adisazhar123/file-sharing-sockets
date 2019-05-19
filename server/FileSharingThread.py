@@ -80,8 +80,6 @@ class ServerThread(threading.Thread):
                     share_to = client_data["params"]['shared_to']
                     to_share = client_data["params"]['file_dir_name']
                     self.SHARE(share_to, to_share)
-                    share_to = client_data["params"]
-                    self.SHARE(share_to)
                 elif client_data["cmd"] == "REGISTER":
                     username = client_data["params"]["username"]
                     password = client_data["params"]["password"]
@@ -305,7 +303,5 @@ class ServerThread(threading.Thread):
             self.MKDIR('[Shared From] - ' + share_from)
             self.working_dir = self.original_working_dir
             self.MKDIR('[Shared To] - ' + share_to)
-            print 'sampe sini mantab'
             shutil.copyfile(self.working_dir + '/' + to_share, self.working_dir + '/[Shared To] - ' + share_to + '/' + to_share)
-            print 'sampe sini lebih mantab'
             
