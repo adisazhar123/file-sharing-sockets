@@ -77,8 +77,9 @@ class ServerThread(threading.Thread):
                 elif client_data['cmd'] == "DELETE":
                     self.DELETE(client_data['params']['file_dir_name'])
                 elif client_data["cmd"] == "SHARE":
-                    share_to = client_data["params"]
-                    self.SHARE(share_to)
+                    share_to = client_data["params"]['shared_to']
+                    to_share = client_data["params"]['file_dir_name']
+                    self.SHARE(share_to, to_share)
 
         except Exception as e:
             self.close_data_socket()
@@ -255,7 +256,7 @@ class ServerThread(threading.Thread):
                 shutil.rmtree(full_path)
             # todo check file
 
-    def SHARE(self, share_to):
+    def SHARE(self, share_to, to_share):
         
         coreIndex = self.original_working_dir.rfind('/core') + 5
         share_from = self.original_working_dir[(coreIndex+1):]
@@ -271,5 +272,7 @@ class ServerThread(threading.Thread):
             self.MKDIR('[Shared From] - ' + share_from)
             self.working_dir = self.original_working_dir
             self.MKDIR('[Shared To] - ' + share_to)
-
+            print 'sampe sini mantab'
+            shutil.copyfile(self.working_dir + '/' + to_share, self.working_dir + '/[Shared To] - ' + share_to + '/' + to_share)
+            print 'sampe sini lebih mantab'
             

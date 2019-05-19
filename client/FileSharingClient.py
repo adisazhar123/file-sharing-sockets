@@ -181,7 +181,13 @@ class Client():
         finally:
             self.LIST()
 
-    def SHARE(self, share_to):
-        self.send_command("SHARE", share_to)
-        self.receive_conn_response()
-        self.LIST()
+    def SHARE(self, share_to, to_share):
+        params = {'shared_to': share_to, 'file_dir_name': to_share}
+        try:
+            self.send_command("SHARE", params)
+            self.receive_conn_response()
+        except Exception as e:
+            print 'Error ' + str(e)
+            traceback.print_exc()
+        finally:
+            self.LIST()

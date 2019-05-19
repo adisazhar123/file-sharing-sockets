@@ -42,6 +42,7 @@ class App(Thread):
         # a folder or zip
         self.to_download_zip = False
         self.to_delete = ''
+        self.to_share = ''
 
     def DELETE(self):
         self.fsc.DELETE(self.to_delete)
@@ -97,6 +98,7 @@ class App(Thread):
                 selected_item = self.tree.item(iid)
                 self.to_download = selected_item['text']
                 self.to_delete = selected_item['text']
+                self.to_share = selected_item['text']
                 if selected_item['values'][1] == 'Directory':
                     self.to_download_zip = True
                 print 'clicked on', self.tree.item(iid)
@@ -172,4 +174,4 @@ class App(Thread):
     def SHARE(self):
         share_to = tkSimpleDialog.askstring("Username", "Enter username to share the file with")
         if share_to:
-            self.fsc.SHARE(share_to)
+            self.fsc.SHARE(share_to, self.to_share)
