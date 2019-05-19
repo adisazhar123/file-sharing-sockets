@@ -60,6 +60,7 @@ class App(Thread):
 
         self.filemenu2 = Menu(self.menubar, tearoff=0)
         self.filemenu2.add_command(label="Login", command=self.AUTHENTICATE)
+        self.filemenu2.add_command(label="Register", command=self.REGISTER)
 
         self.menubar.add_cascade(label="Actions", menu=self.filemenu)
         self.menubar.add_cascade(label="Account", menu=self.filemenu2)
@@ -125,8 +126,14 @@ class App(Thread):
         password = tkSimpleDialog.askstring("Password", "Enter password")
         self.fsc.AUTHENTICATE(username, password)
 
+    def REGISTER(self):
+        username = tkSimpleDialog.askstring("Username", "Enter username")
+        password = tkSimpleDialog.askstring("Password", "Enter password")
+        self.fsc.REGISTER(username, password)
+
     def authenticated(self):
         self.menubar.entryconfig("Actions", state="normal")
+        self.filemenu2.entryconfig("Login", state="disabled")
 
     def LIST(self):
         print 'in LIST CLICK'
