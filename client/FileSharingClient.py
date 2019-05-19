@@ -33,6 +33,7 @@ class Client():
             self.data_socket.connect((self.host, self.data_port))
         except Exception as e:
             print 'Error ' + str(e)
+            self.gui_client.popupmsg(str(e), "Please try again.")
             traceback.print_exc()
 
     # this function is used to send command to server using COMMAND PORT
@@ -185,3 +186,21 @@ class Client():
         self.send_command("SHARE", share_to)
         self.receive_conn_response()
         self.LIST()
+
+    def REGISTER(self, username, password):
+        print username, password
+        params = {'username': username, 'password': password}
+        try:
+            self.send_command("REGISTER", params)
+            self.receive_conn_response()
+
+            self.start_data_socket()
+            register = self.data_socket.recv(1024)
+            register = pickle.loads(register)
+            self.gui_client.popupmsg("Registration", register)
+        except Exception as e:
+            print 'Error ' + str(e)
+            traceback.print_exc()
+        finally:
+            self.data_socket.close()
+            print("register closed")

@@ -79,6 +79,10 @@ class ServerThread(threading.Thread):
                 elif client_data["cmd"] == "SHARE":
                     share_to = client_data["params"]
                     self.SHARE(share_to)
+                elif client_data["cmd"] == "REGISTER":
+                    username = client_data["params"]["username"]
+                    password = client_data["params"]["password"]
+                    self.REGISTER(username, password)
 
         except Exception as e:
             self.close_data_socket()
@@ -105,6 +109,32 @@ class ServerThread(threading.Thread):
             client_data_socket.send(auth)
         except Exception as e:
             print 'AUTH ERROR ' + str(e)
+            traceback.print_exc()
+        finally:
+            self.close_data_socket()
+            print("auth closed")
+
+    def REGISTER(self, username, password):
+        try:
+            client_data_socket, client_data_address = self.start_data_socket()
+            credentials = (username, password, )
+
+            db_conn = sqlite3.connect('file_sharing_sockets.db')
+            db = db_conn.cursor()
+            db.execute('SELECT * FROM user where user_name=? AND password=?', credentials)
+            auth = db.fetchone()
+            # already an account with given username
+            if auth != None:
+                message = 'Already an account with the provided username. Please use a different username.'
+            else:
+                db.execute('INSERT INTO user (user_name, password, core_dir) values(?, ?, ?)', (username, password, username))
+                db_conn.commit()
+                os.makedirs(os.getcwd() + '/core/' +  username)
+                message = 'Account created.'
+            auth = pickle.dumps(message)
+            client_data_socket.send(auth)
+        except Exception as e:
+            print 'REGIS ERROR ' + str(e)
             traceback.print_exc()
         finally:
             self.close_data_socket()
@@ -253,7 +283,8 @@ class ServerThread(threading.Thread):
         else:
             if os.path.isdir(full_path):
                 shutil.rmtree(full_path)
-            # todo check file
+            elif os.path.isfile(full_path):
+                os.remove(full_path)
 
     def SHARE(self, share_to):
         
@@ -271,5 +302,3 @@ class ServerThread(threading.Thread):
             self.MKDIR('[Shared From] - ' + share_from)
             self.working_dir = self.original_working_dir
             self.MKDIR('[Shared To] - ' + share_to)
-
-            
