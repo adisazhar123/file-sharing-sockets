@@ -6,7 +6,7 @@ import time
 import traceback
 import sqlite3
 import shutil
-
+import zipfile
 
 class ServerThread(threading.Thread):
     def __init__(self, client, data_port):
@@ -15,7 +15,7 @@ class ServerThread(threading.Thread):
         self.working_dir = os.getcwd() + '/core'
         self.server_root = os.getcwd()
         self.original_working_dir = os.getcwd() + '/core'
-        self.data_address = ('127.0.0.1', data_port)
+        self.data_address = ('0.0.0.0', data_port)
         threading.Thread.__init__(self)
 
     def start_data_socket(self):
@@ -74,6 +74,9 @@ class ServerThread(threading.Thread):
                     print("in UPLOAD ")
                     print(client_data["params"])
                     self.UPLOAD(client_data["params"]["file_dir_name"])
+                elif client_data['cmd'] == "UPLOAD_DIR":
+                    print 'in upload dir'
+                    self.UPLOAD_DIR(client_data["params"]["zip_name"], client_data['params']['original_dir_name'])
                 elif client_data['cmd'] == "DELETE":
                     self.DELETE(client_data['params']['file_dir_name'])
                 elif client_data["cmd"] == "SHARE":
@@ -202,34 +205,75 @@ class ServerThread(threading.Thread):
             finally:
                 self.data_socket.close()
                 print("upload socket closed")
-    def CD(self, dirName):
-        if dirName == "..":
-            if self.working_dir == self.original_working_dir:
-                pass
-            # go to root after going back from "[Shared To] - ..." folder
-            elif self.working_dir.rfind('/[Shared To] - ') > 0:
-                self.working_dir = self.original_working_dir
-            else:
-                slashIndex = self.working_dir.rfind('/')
-                self.working_dir = self.working_dir[:slashIndex]
-        # redirect to "[Shared To] - ..." when go to "[Shared From] - ..."
-        elif dirName[:16] == "[Shared From] - ":
-            self.working_dir = self.working_dir + '/' + dirName
-            
-            sharedToIndex = self.working_dir.rfind('/core') + 6
-            sharedTo = self.working_dir.rfind('/[Shared From] - ')
-            sharedToPerson = self.working_dir[sharedToIndex:sharedTo]
-            print 'shared to ' + sharedToPerson
-            sharedFrom = self.working_dir.rfind('/[Shared From] - ') + 17
-            sharedFromPerson = self.working_dir[sharedFrom:]
-            print 'shared from ' + sharedFromPerson
 
-            coreIndex = self.working_dir.rfind('/core')
-            self.working_dir = self.working_dir[:coreIndex] + '/core/' + sharedFromPerson + '/[Shared To] - ' + sharedToPerson
-            
-        else:
-            self.working_dir = self.working_dir + '/' + dirName
-        
+    def UPLOAD_DIR(self, zip_name, original_dir_name):
+        try:
+            client_data_socket, client_data_address = self.start_data_socket()
+            f = open(self.working_dir + '/' + zip_name, 'wb')
+            while True:
+                bytes = client_data_socket.recv(1024)
+                print("data %s", (bytes))
+                if not bytes:
+                    break
+                f.write(bytes)
+            f.close()
+            print 'upload zip completed'
+        #     extract the zip file
+            print 'extracting the zip file'
+            new_dir = self.working_dir + '/' + original_dir_name
+            # check if dir exists
+            if not os.path.exists(new_dir):
+                print 'making directory'
+                os.makedirs(new_dir)
+            else:
+                print 'making directory, adding unique value to it'
+                unique = time.time()
+                os.makedirs(new_dir + "_" + str(int(unique)))
+
+            zip_ref = zipfile.ZipFile(self.working_dir + '/' + zip_name, 'r')
+            zip_ref.extractall(new_dir + '/' + original_dir_name)
+            zip_ref.close()
+
+            print 'zip file extracted'
+            # delete the zip file
+            print 'deleting zip file'
+            os.remove(self.working_dir + '/' + zip_name)
+            print 'zip file deleted'
+        except Exception as e:
+            print 'Error ' + str(e)
+        finally:
+            self.data_socket.close()
+
+    def CD(self, dirName):
+        try:
+            if dirName == "..":
+                if self.working_dir == self.original_working_dir:
+                    pass
+                # go to root after going back from "[Shared To] - ..." folder
+                elif self.working_dir.rfind('/[Shared To] - ') > 0:
+                    self.working_dir = self.original_working_dir
+                else:
+                    slashIndex = self.working_dir.rfind('/')
+                    self.working_dir = self.working_dir[:slashIndex]
+            # redirect to "[Shared To] - ..." when go to "[Shared From] - ..."
+            elif dirName[:16] == "[Shared From] - ":
+                self.working_dir = self.working_dir + '/' + dirName
+
+                sharedToIndex = self.working_dir.rfind('/core') + 6
+                sharedTo = self.working_dir.rfind('/[Shared From] - ')
+                sharedToPerson = self.working_dir[sharedToIndex:sharedTo]
+                print 'shared to ' + sharedToPerson
+                sharedFrom = self.working_dir.rfind('/[Shared From] - ') + 17
+                sharedFromPerson = self.working_dir[sharedFrom:]
+                print 'shared from ' + sharedFromPerson
+
+                coreIndex = self.working_dir.rfind('/core')
+                self.working_dir = self.working_dir[:coreIndex] + '/core/' + sharedFromPerson + '/[Shared To] - ' + sharedToPerson
+            else:
+                self.working_dir = self.working_dir + '/' + dirName
+        except Exception as e:
+            print 'CD ERROR ' + str(e)
+            traceback.print_exc()
         print("Current working directory: " + self.working_dir)
     
     def LIST(self):
@@ -237,8 +281,8 @@ class ServerThread(threading.Thread):
             client_data_socket, client_data_address = self.start_data_socket()
             entries = os.listdir(self.working_dir)
             entries = self.check_type(entries)
-
             entries = pickle.dumps(entries)
+            # time.sleep(0.5)
             client_data_socket.send(entries)
 
         except Exception as e:
@@ -252,10 +296,13 @@ class ServerThread(threading.Thread):
         full_path = self.working_dir + '/' + dir_name
         try:
             # check whether to be created dir exists
-            # TODO: alert/ warning for duplicated name
             if not os.path.exists(full_path):
                 print 'making directory'
                 os.makedirs(full_path)
+            else:
+                print 'making directory, adding unique value to it'
+                unique = time.time()
+                os.makedirs(full_path + "_" + str(int(unique)))
         except Exception as e:
             print 'MKDIR ERROR ' + str(e)
             traceback.print_exc()
@@ -279,16 +326,19 @@ class ServerThread(threading.Thread):
 
     def DELETE(self, file_dir):
         full_path = self.working_dir + '/' + file_dir
-        if not os.path.exists(full_path):
-            print 'Not exists!'
-        else:
-            if os.path.isdir(full_path):
-                shutil.rmtree(full_path)
-            elif os.path.isfile(full_path):
-                os.remove(full_path)
+        try:
+            if not os.path.exists(full_path):
+                print 'Not exists!'
+            else:
+                if os.path.isdir(full_path):
+                    shutil.rmtree(full_path)
+                elif os.path.isfile(full_path):
+                    os.remove(full_path)
+        except Exception as e:
+            print 'DELETE ERROR ' + str(e)
+            traceback.print_exc()
 
     def SHARE(self, share_to, to_share):
-        
         coreIndex = self.original_working_dir.rfind('/core') + 5
         share_from = self.original_working_dir[(coreIndex+1):]
         
@@ -304,4 +354,3 @@ class ServerThread(threading.Thread):
             self.working_dir = self.original_working_dir
             self.MKDIR('[Shared To] - ' + share_to)
             shutil.copyfile(self.working_dir + '/' + to_share, self.working_dir + '/[Shared To] - ' + share_to + '/' + to_share)
-            

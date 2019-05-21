@@ -1,5 +1,8 @@
+import os
 import pickle
+import shutil
 import socket as Socket
+import time
 import traceback
 
 
@@ -33,7 +36,7 @@ class Client():
             self.data_socket.connect((self.host, self.data_port))
         except Exception as e:
             print 'Error ' + str(e)
-            self.gui_client.popupmsg(str(e), "Please try again.")
+            self.gui_client.popup_thread(str(e), "Please try again.")
             traceback.print_exc()
 
     # this function is used to send command to server using COMMAND PORT
@@ -97,16 +100,16 @@ class Client():
             auth = pickle.loads(auth)
             if auth == None:
                 print 'NO credentials found'
-                self.gui_client.popupmsg("Failed Authentication", "Authentication failed.\nPlease try again.")
+                self.gui_client.popup_thread("Failed Authentication", "Authentication failed.\nPlease try again.")
             else:
                 self.gui_client.authenticated()
                 print " " + str(auth)
+                self.data_socket.close()
                 self.LIST()
         except Exception as e:
             print 'Error ' + str(e)
             traceback.print_exc()
         finally:
-            self.data_socket.close()
             print("auth closed")
 
     def start(self):
@@ -136,12 +139,14 @@ class Client():
                     break
                 f.write(bytes)
             f.close()
+            self.gui_client.popup_thread("Success", "Download success")
         except Exception as e:
             print 'Error ' + str(e)
             traceback.print_exc()
         finally:
             self.gui_client.to_download_zip = False
-    
+
+    # upload a file
     def UPLOAD(self, file_dir_name):
         indx = file_dir_name.rfind('/')
         fileName = file_dir_name[indx+1:]
@@ -162,13 +167,49 @@ class Client():
                     break
             f.close()
             print("UPLOAD completed.")
+            self.gui_client.popup_thread("Success", "Upload success")
         except Exception as e:
             print 'Error ' + str(e)
+            self.gui_client.popup_thread("Error", str(e))
             traceback.print_exc()
         finally:
             self.data_socket.close()
             print("upload socket closed")
             self.LIST()
+
+    # upload dir
+    def UPLOAD_DIR(self, dir_name):
+        if os.path.isdir(dir_name):
+            try:
+                print 'is a directory.. zipping ' + dir_name
+                # zip temporarily to a folder
+                temp_zip_name = str(time.time())
+                shutil.make_archive(temp_zip_name, 'zip', dir_name)
+                print 'zipped'
+                print 'preparing to send to server'
+                original_name = os.path.basename(dir_name)
+                params = {'zip_name': temp_zip_name + '.zip', 'original_dir_name': original_name}
+                self.send_command('UPLOAD_DIR', params)
+                self.receive_conn_response()
+
+                self.start_data_socket()
+                # read the zipped file
+                f = open(temp_zip_name + '.zip', 'rb')
+                bytes = f.read(1024)
+                while (bytes):
+                    self.data_socket.send(bytes)
+                    bytes = f.read(1024)
+                f.close()
+                # remove the temp zipped file
+                os.remove(temp_zip_name + '.zip')
+            except Exception as e:
+                print "Error " + str(e)
+                self.gui_client.popup_thread("Error", str(e))
+                traceback.print_exc()
+            finally:
+                self.data_socket.close()
+                print("upload dir data socket closed")
+                self.LIST()
 
     # TODO: check if deleted is folder/ file
     def DELETE(self, to_delete):
@@ -176,8 +217,10 @@ class Client():
         try:
             self.send_command('DELETE', params)
             self.receive_conn_response()
+            self.gui_client.popup_thread("Success", "Delete success")
         except Exception as e:
             print 'Error ' + str(e)
+            self.gui_client.popup_thread("Error", str(e))
             traceback.print_exc()
         finally:
             self.LIST()
@@ -187,8 +230,10 @@ class Client():
         try:
             self.send_command("SHARE", params)
             self.receive_conn_response()
+            self.gui_client.popup_thread("Success", "Share success")
         except Exception as e:
             print 'Error ' + str(e)
+            self.gui_client.popup_thread("Error", str(e))
             traceback.print_exc()
         finally:
             self.LIST()
@@ -203,9 +248,10 @@ class Client():
             self.start_data_socket()
             register = self.data_socket.recv(1024)
             register = pickle.loads(register)
-            self.gui_client.popupmsg("Registration", register)
+            self.gui_client.popup_thread("Registration", register)
         except Exception as e:
             print 'Error ' + str(e)
+            self.gui_client.popup_thread("Error", str(e))
             traceback.print_exc()
         finally:
             self.data_socket.close()

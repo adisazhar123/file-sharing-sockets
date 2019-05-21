@@ -1,4 +1,5 @@
 import Tkinter as tk
+import threading
 import ttk
 from threading import *
 from client.FileSharingClient import Client
@@ -53,8 +54,8 @@ class App(Thread):
         self.filemenu = Menu(self.menubar, tearoff=0)
         self.filemenu.add_command(label="Create Directory", command=self.MKDIR)
         self.filemenu.add_command(label="Refresh", command=self.LIST)
-        self.filemenu.add_command(label="Save")
-        self.filemenu.add_command(label="Upload", command=self.browse_upload)
+        self.filemenu.add_command(label="Upload Directory", command=self.browse_upload_dir)
+        self.filemenu.add_command(label="Upload File", command=self.browse_upload)
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Exit")
 
@@ -120,16 +121,23 @@ class App(Thread):
             self.upload_location = dir_name
             self.UPLOAD(dir_name)
             print dir_name
-    
+    # browse directory to upload
+    def browse_upload_dir(self):
+        dir_name = tkFileDialog.askdirectory()
+        if dir_name:
+            self.UPLOAD_DIR(dir_name)
+
     def AUTHENTICATE(self):
         username = tkSimpleDialog.askstring("Username", "Enter username")
         password = tkSimpleDialog.askstring("Password", "Enter password")
-        self.fsc.AUTHENTICATE(username, password)
+        if username and password:
+            self.fsc.AUTHENTICATE(username, password)
 
     def REGISTER(self):
         username = tkSimpleDialog.askstring("Username", "Enter username")
         password = tkSimpleDialog.askstring("Password", "Enter password")
-        self.fsc.REGISTER(username, password)
+        if username and password:
+            self.fsc.REGISTER(username, password)
 
     def authenticated(self):
         self.menubar.entryconfig("Actions", state="normal")
@@ -152,6 +160,10 @@ class App(Thread):
     def UPLOAD(self, file_dir_name):
         print("Uploading file")
         self.fsc.UPLOAD(file_dir_name)
+
+    def UPLOAD_DIR(self, dir_name):
+        print 'Uploading directory'
+        self.fsc.UPLOAD_DIR(dir_name)
 
     def run(self):
         self.fsc.start()
@@ -177,7 +189,11 @@ class App(Thread):
         B1 = ttk.Button(popup, text="OK", command = popup.destroy)
         B1.pack()
         popup.mainloop()
-        
+
+    def popup_thread(self, title, msg):
+        thread1 = threading.Thread(target=self.popupmsg, args=(title, msg))
+        thread1.start()
+
     def SHARE(self):
         share_to = tkSimpleDialog.askstring("Username", "Enter username to share the file with")
         if share_to:
