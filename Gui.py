@@ -47,7 +47,7 @@ class App(Thread):
 
     def DELETE(self):
         self.fsc.DELETE(self.to_delete)
-
+    
     def construct_top_menu(self):
         self.menubar = Menu(self.frame)
 
@@ -57,7 +57,7 @@ class App(Thread):
         self.filemenu.add_command(label="Upload Directory", command=self.browse_upload_dir)
         self.filemenu.add_command(label="Upload File", command=self.browse_upload)
         self.filemenu.add_separator()
-        self.filemenu.add_command(label="Exit")
+        self.filemenu.add_command(label="Exit", command=self.EXIT)
 
         self.filemenu2 = Menu(self.menubar, tearoff=0)
         self.filemenu2.add_command(label="Login", command=self.AUTHENTICATE)
@@ -198,3 +198,7 @@ class App(Thread):
         share_to = tkSimpleDialog.askstring("Username", "Enter username to share the file with")
         if share_to:
             self.fsc.SHARE(share_to, self.to_share)
+    
+    def EXIT(self):
+        print("exiting....")
+        self.fsc.EXIT()
