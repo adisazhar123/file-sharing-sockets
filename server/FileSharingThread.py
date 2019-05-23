@@ -340,6 +340,7 @@ class ServerThread(threading.Thread):
             traceback.print_exc()
 
     def SHARE(self, share_to, to_share):
+        copy_dir = self.working_dir
         coreIndex = self.original_working_dir.rfind('/core') + 5
         share_from = self.original_working_dir[(coreIndex+1):]
         
@@ -354,4 +355,4 @@ class ServerThread(threading.Thread):
             self.MKDIR('[Shared From] - ' + share_from)
             self.working_dir = self.original_working_dir
             self.MKDIR('[Shared To] - ' + share_to)
-            shutil.copyfile(self.working_dir + '/' + to_share, self.working_dir + '/[Shared To] - ' + share_to + '/' + to_share)
+            shutil.copyfile(copy_dir + '/' + to_share, self.working_dir + '/[Shared To] - ' + share_to + '/' + to_share)
