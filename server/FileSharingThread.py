@@ -314,12 +314,13 @@ class ServerThread(threading.Thread):
         for fd in files_dirs:
             full_path = self.working_dir + '/' + str(fd)
             size = os.path.getsize(full_path)
+            mtime = time.ctime(os.path.getmtime(full_path))
             print full_path, str(size)
 
             if os.path.isdir(full_path):
-                file_dirs.append({'name': fd, 'type': 'dir', 'size': size})
+                file_dirs.append({'name': fd, 'type': 'dir', 'size': size, 'mtime': mtime})
             elif os.path.isfile(full_path):
-                file_dirs.append({'name': fd, 'type': 'file', 'size': size})
+                file_dirs.append({'name': fd, 'type': 'file', 'size': size, 'mtime': mtime})
             else:
                 print 'unknown file'
         return file_dirs

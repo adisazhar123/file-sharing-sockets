@@ -176,10 +176,11 @@ class App(Thread):
         
         for fd in files_dirs:
             fd_size = str(fd["size"]) + " Bytes"
+            fd_mtime = str(fd["mtime"])
             if fd["type"] == 'dir':
-                self.tree.insert("", 2, iid=fd['name'], text=fd['name'], values=("23-Jun-17 11:25", "Directory", fd_size))
+                self.tree.insert("", 2, iid=fd['name'], text=fd['name'], values=(fd_mtime, "Directory", fd_size))
             else:
-                self.tree.insert("", 2, iid=fd['name'], text=fd['name'], values=("23-Jun-17 11:25", "File", fd_size))
+                self.tree.insert("", 2, iid=fd['name'], text=fd['name'], values=(fd_mtime, "File", fd_size))
 
     def popupmsg(self, title, msg):
         popup = tk.Tk()
