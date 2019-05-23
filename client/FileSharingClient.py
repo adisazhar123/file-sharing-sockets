@@ -256,3 +256,6 @@ class Client():
         finally:
             self.data_socket.close()
             print("register closed")
+
+    def EXIT(self):
+        exit()
